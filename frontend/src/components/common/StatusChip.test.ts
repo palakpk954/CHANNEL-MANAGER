@@ -38,3 +38,4 @@ describe('Plain-Language Design System Status Mapping', () => {
     expect(statusLabels['closed']).toBe('Closed for sale');
   });
 });
+

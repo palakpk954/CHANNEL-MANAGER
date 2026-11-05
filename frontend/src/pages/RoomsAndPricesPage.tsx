@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../lib/api';
 import { StatusChip } from '../components/common/StatusChip';
 import {
@@ -7,7 +8,10 @@ import {
   Plus,
   Users,
   FileSpreadsheet,
-  X
+  X,
+  LayoutGrid,
+  List,
+  ArrowRight
 } from 'lucide-react';
 
 interface RoomType {
@@ -41,12 +45,25 @@ interface Property {
 }
 
 export const RoomsAndPricesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'rooms' | 'prices'>('rooms');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [ratePlans, setRatePlans] = useState<RatePlan[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const getRoomImage = (name: string, code: string) => {
+    const lower = (name + ' ' + code).toLowerCase();
+    if (lower.includes('villa') || lower.includes('pres')) {
+      return 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80';
+    }
+    if (lower.includes('suite') || lower.includes('exec')) {
+      return 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
+  };
 
   // Modals state
   const [showAddRoom, setShowAddRoom] = useState<boolean>(false);
@@ -224,80 +241,218 @@ export const RoomsAndPricesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-neutral-300 gap-6 text-sm font-medium">
-        <button
-          onClick={() => setActiveTab('rooms')}
-          className={`pb-3 flex items-center gap-2 border-b-2 transition-colors ${
-            activeTab === 'rooms'
-              ? 'border-brand-600 text-brand-600 font-semibold'
-              : 'border-transparent text-neutral-600 hover:text-neutral-900'
-          }`}
-        >
-          <BedDouble className="w-4 h-4" />
-          <span>Room Types ({roomTypes.length})</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('prices')}
-          className={`pb-3 flex items-center gap-2 border-b-2 transition-colors ${
-            activeTab === 'prices'
-              ? 'border-brand-600 text-brand-600 font-semibold'
-              : 'border-transparent text-neutral-600 hover:text-neutral-900'
-          }`}
-        >
-          <Tag className="w-4 h-4" />
-          <span>Price Plans ({ratePlans.length})</span>
-        </button>
+      {/* Tabs & View Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-300 gap-4">
+        <div className="flex gap-6 text-sm font-medium">
+          <button
+            onClick={() => setActiveTab('rooms')}
+            className={`pb-3 flex items-center gap-2 border-b-2 transition-colors ${
+              activeTab === 'rooms'
+                ? 'border-brand-600 text-brand-600 font-semibold'
+                : 'border-transparent text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            <BedDouble className="w-4 h-4" />
+            <span>Room Types ({roomTypes.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('prices')}
+            className={`pb-3 flex items-center gap-2 border-b-2 transition-colors ${
+              activeTab === 'prices'
+                ? 'border-brand-600 text-brand-600 font-semibold'
+                : 'border-transparent text-neutral-600 hover:text-neutral-900'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span>Price Plans ({ratePlans.length})</span>
+          </button>
+        </div>
+
+        {activeTab === 'rooms' && (
+          <div className="flex items-center gap-1 pb-2">
+            <span className="text-xs text-neutral-500 mr-2">View:</span>
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${
+                viewMode === 'cards'
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm'
+                  : 'bg-white border-neutral-300 text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Visual Cards</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${
+                viewMode === 'table'
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-800 shadow-sm'
+                  : 'bg-white border-neutral-300 text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Compact Table</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Table Content */}
+      {/* Content */}
       {loading ? (
-        <div className="bg-white p-12 text-center rounded-lg border border-neutral-300">
+        <div className="bg-white p-12 text-center rounded-2xl border border-neutral-300">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
           <p className="text-xs text-neutral-500 mt-3">Loading rooms and prices...</p>
         </div>
       ) : activeTab === 'rooms' ? (
-        <div className="bg-white rounded-lg border border-neutral-300 overflow-hidden shadow-sm">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead className="bg-neutral-100 text-neutral-700 font-semibold border-b border-neutral-300">
-              <tr>
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4">Room name</th>
-                <th className="py-3 px-4">Max guests</th>
-                <th className="py-3 px-4">Total rooms</th>
-                <th className="py-3 px-4">Bed configuration</th>
-                <th className="py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200">
-              {roomTypes.length === 0 ? (
+        viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {roomTypes.map((room) => {
+              const imageUrl = getRoomImage(room.name, room.code);
+              const linkedPlans = ratePlans.filter((p) => p.roomTypeId === room.id);
+
+              return (
+                <div
+                  key={room.id}
+                  className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Room High-Res Photo with Hover Zoom */}
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={imageUrl}
+                        alt={room.name}
+                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+
+                      {/* Code Badge */}
+                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-slate-900/80 text-amber-300 backdrop-blur-md border border-white/20">
+                        {room.code}
+                      </span>
+
+                      {/* Units Badge */}
+                      <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-300 backdrop-blur-md border border-emerald-400/30">
+                        {room.totalUnits} Units Configured
+                      </span>
+
+                      {/* Room Name */}
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <h3 className="text-base font-bold text-white drop-shadow-md">{room.name}</h3>
+                      </div>
+                    </div>
+
+                    {/* Specifications */}
+                    <div className="p-5 space-y-4">
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Max {room.maxOccupancy} Guests</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                          <BedDouble className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="truncate">{room.bedType || 'King Bed'}</span>
+                        </div>
+                      </div>
+
+                      {/* Amenities Chips */}
+                      <div>
+                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider block mb-1.5">
+                          Included Amenities
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(room.amenities || 'High-speed WiFi, Ocean Balcony, AC, Mini-bar')
+                            .split(',')
+                            .map((am, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700"
+                              >
+                                {am.trim()}
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+
+                      {/* Linked Rate Plans */}
+                      <div className="pt-2 border-t border-slate-100 text-xs">
+                        <span className="text-[10px] text-slate-400 block mb-1">Active Price Plans:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {linkedPlans.length > 0 ? (
+                            linkedPlans.map((lp) => (
+                              <span
+                                key={lp.id}
+                                className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-semibold border border-emerald-200"
+                              >
+                                {lp.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-400 text-[11px] italic">No price plans linked</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between">
+                    <StatusChip status={room.status === 'ACTIVE' ? 'available' : 'closed'} label={room.status} />
+
+                    <button
+                      onClick={() => navigate('/calendar')}
+                      className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition flex items-center gap-1"
+                    >
+                      <span>Calendar</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-neutral-300 overflow-hidden shadow-sm">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-neutral-100 text-neutral-700 font-semibold border-b border-neutral-300">
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-neutral-500">
-                    No room types found. Click "Add a room type" to begin.
-                  </td>
+                  <th className="py-3 px-4">Code</th>
+                  <th className="py-3 px-4">Room name</th>
+                  <th className="py-3 px-4">Max guests</th>
+                  <th className="py-3 px-4">Total rooms</th>
+                  <th className="py-3 px-4">Bed configuration</th>
+                  <th className="py-3 px-4">Status</th>
                 </tr>
-              ) : (
-                roomTypes.map((room) => (
-                  <tr key={room.id} className="hover:bg-cream-50/50 transition-colors">
-                    <td className="py-3 px-4 font-mono font-medium text-neutral-900">{room.code}</td>
-                    <td className="py-3 px-4 font-medium text-neutral-900">{room.name}</td>
-                    <td className="py-3 px-4 text-neutral-600 flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-neutral-400" />
-                      <span>{room.maxOccupancy} guests</span>
-                    </td>
-                    <td className="py-3 px-4 font-mono font-medium text-neutral-900">
-                      {room.totalUnits} rooms
-                    </td>
-                    <td className="py-3 px-4 text-neutral-600">{room.bedType || 'Standard'}</td>
-                    <td className="py-3 px-4">
-                      <StatusChip status={room.status === 'ACTIVE' ? 'available' : 'closed'} label={room.status} />
+              </thead>
+              <tbody className="divide-y divide-neutral-200">
+                {roomTypes.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-neutral-500">
+                      No room types found. Click "Add a room type" to begin.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  roomTypes.map((room) => (
+                    <tr key={room.id} className="hover:bg-cream-50/50 transition-colors">
+                      <td className="py-3 px-4 font-mono font-medium text-neutral-900">{room.code}</td>
+                      <td className="py-3 px-4 font-medium text-neutral-900">{room.name}</td>
+                      <td className="py-3 px-4 text-neutral-600 flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-neutral-400" />
+                        <span>{room.maxOccupancy} guests</span>
+                      </td>
+                      <td className="py-3 px-4 font-mono font-medium text-neutral-900">
+                        {room.totalUnits} rooms
+                      </td>
+                      <td className="py-3 px-4 text-neutral-600">{room.bedType || 'Standard'}</td>
+                      <td className="py-3 px-4">
+                        <StatusChip status={room.status === 'ACTIVE' ? 'available' : 'closed'} label={room.status} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : (
         <div className="bg-white rounded-lg border border-neutral-300 overflow-hidden shadow-sm">
           <table className="w-full text-left border-collapse text-xs">

@@ -23,7 +23,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  propertyName = 'Hotel Rajmahal',
+  propertyName = 'The Grand Palace Resort & Spa',
   syncStatus = 'success',
   syncBadgeLabel = 'All up to date',
   unresolvedConflictsCount = 0,
