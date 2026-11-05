@@ -14,8 +14,6 @@ import {
 import clsx from 'clsx';
 
 export const Sidebar: React.FC = () => {
-  const [showTools, setShowTools] = React.useState(false);
-
   // 4 Primary Daily Hotel Operations
   const primaryNavItems = [
     { label: 'Home', path: '/', icon: Home, hint: "Today's overview" },
@@ -24,7 +22,7 @@ export const Sidebar: React.FC = () => {
     { label: 'Connected Channels', path: '/channels', icon: Globe2, hint: 'OTAs & iCal' },
   ];
 
-  // Secondary Tools (Available without cluttering daily operations)
+  // Property Setup & Management Tools
   const secondaryNavItems = [
     { label: 'Rooms & Prices', path: '/rooms-and-prices', icon: BedDouble },
     { label: 'Channel Health & SLA', path: '/channels/health', icon: History },
@@ -45,8 +43,8 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Primary Navigation */}
-      <nav className="flex-1 px-3.5 py-5 space-y-1.5 overflow-y-auto">
+      {/* Navigation */}
+      <nav className="flex-1 px-3.5 py-4 space-y-1 overflow-y-auto">
         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 mb-2">
           Daily Operations
         </div>
@@ -72,28 +70,23 @@ export const Sidebar: React.FC = () => {
           </NavLink>
         ))}
 
-        {/* Secondary Tools Section */}
-        <div className="pt-6">
-          <button
-            type="button"
-            onClick={() => setShowTools(!showTools)}
-            className="w-full flex items-center justify-between px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300 transition py-1"
-          >
-            <span>Hotel Management Tools</span>
-            <span className="text-xs">{showTools ? '−' : '+'}</span>
-          </button>
+        {/* Property & Tools Section */}
+        <div className="pt-5">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-3 mb-2">
+            Property & Tools
+          </div>
 
-          <div className={clsx('space-y-1 mt-1.5', !showTools && 'hidden')}>
+          <div className="space-y-1">
             {secondaryNavItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
                   clsx(
-                    'flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition',
+                    'group flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition',
                     isActive
                       ? 'bg-slate-800 text-emerald-400 font-semibold'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
                   )
                 }
               >

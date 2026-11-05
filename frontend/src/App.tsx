@@ -12,6 +12,7 @@ import { BookingsPage } from './pages/BookingsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { ActivityPage } from './pages/ActivityPage';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const ProtectedLayout: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -45,26 +46,28 @@ const ProtectedLayout: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/bookings" element={<BookingsPage />} />
-            <Route path="/channels" element={<ChannelsPage />} />
-            <Route path="/channels/health" element={<ChannelHealthPage />} />
-            <Route path="/rooms-and-prices" element={<RoomsAndPricesPage />} />
-            <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/reports" element={<div className="text-slate-800 font-medium">Reports in progress...</div>} />
-            <Route path="/activity" element={<ActivityPage />} />
-            <Route path="/settings" element={<div className="text-slate-800 font-medium">Settings in progress...</div>} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/bookings" element={<BookingsPage />} />
+              <Route path="/channels" element={<ChannelsPage />} />
+              <Route path="/channels/health" element={<ChannelHealthPage />} />
+              <Route path="/rooms-and-prices" element={<RoomsAndPricesPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/reports" element={<div className="text-slate-800 font-medium">Reports in progress...</div>} />
+              <Route path="/activity" element={<ActivityPage />} />
+              <Route path="/settings" element={<div className="text-slate-800 font-medium">Settings in progress...</div>} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 };
 

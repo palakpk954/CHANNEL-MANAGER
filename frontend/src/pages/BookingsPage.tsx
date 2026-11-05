@@ -175,11 +175,17 @@ export const BookingsPage: React.FC = () => {
     try {
       setLoading(true);
       const [resRes, confRes] = await Promise.all([
-        api.get<Reservation[]>(`/properties/${propId}/reservations`),
-        api.get<Conflict[]>(`/properties/${propId}/conflicts`)
+        api.get<any>(`/properties/${propId}/reservations`),
+        api.get<any>(`/properties/${propId}/conflicts`)
       ]);
-      setReservations(resRes.data || []);
-      setConflicts(confRes.data || []);
+      const resList = Array.isArray(resRes.data)
+        ? resRes.data
+        : (resRes.data?.content || []);
+      const confList = Array.isArray(confRes.data)
+        ? confRes.data
+        : (confRes.data?.content || []);
+      setReservations(resList);
+      setConflicts(confList);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to load bookings.');
     } finally {
@@ -188,6 +194,7 @@ export const BookingsPage: React.FC = () => {
   };
 
   const unresolvedConflicts = useMemo(() => {
+    if (!Array.isArray(conflicts)) return [];
     return conflicts.filter((c) => c.status === 'UNRESOLVED');
   }, [conflicts]);
 
@@ -198,6 +205,7 @@ export const BookingsPage: React.FC = () => {
 
   // Filter reservations
   const filteredReservations = useMemo(() => {
+    if (!Array.isArray(reservations)) return [];
     return reservations.filter((r) => {
       const matchesSearch =
         r.guestName.toLowerCase().includes(searchTerm.toLowerCase()) ||
