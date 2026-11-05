@@ -218,7 +218,7 @@ export const DashboardPage: React.FC = () => {
             {/* Live Property Location & Weather Pills */}
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
                 <span>5-Star Luxury Resort</span>
               </span>
 
@@ -319,7 +319,7 @@ export const DashboardPage: React.FC = () => {
 
       {/* 2. DOUBLE BOOKING CONFLICT ALERT (Architecture Rule 6) */}
       {summary && summary.unresolvedConflictsCount > 0 && (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 shadow-md animate-pulse-glow">
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-md shrink-0">
