@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Channel Manager — Feature & User Role Specification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #059669;
+      --primary-dark: #047857;
+      --primary-light: #ecfdf5;
+      --slate-900: #0f172a;
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748b;
+      --slate-200: #e2e8f0;
+      --slate-100: #f1f5f9;
+      --slate-50: #f8fafc;
+      --rose-500: #f43f5e;
+      --rose-50: #fff1f2;
+      --amber-600: #d97706;
+      --amber-50: #fffbeb;
+      --blue-600: #2563eb;
+      --blue-50: #eff6ff;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--slate-800);
+      background-color: #f8fafc;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 20px;
+      padding: 50px 60px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    }
+    .no-print-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--slate-200);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border: 1px solid #a7f3d0;
+    }
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--slate-900);
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+    .btn-print:hover {
+      background: var(--primary);
+    }
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: var(--slate-600);
+      margin-bottom: 25px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 40px;
+    }
+    .meta-item {
+      font-size: 13px;
+    }
+    .meta-label {
+      color: var(--slate-500);
+      font-weight: 600;
+    }
+    .meta-val {
+      color: var(--slate-900);
+      font-weight: 700;
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--slate-900);
+      margin: 35px 0 16px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--slate-100);
+    }
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin: 22px 0 10px 0;
+    }
+    p {
+      font-size: 14.5px;
+      color: var(--slate-700);
+      margin-bottom: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 30px 0;
+      font-size: 13px;
+    }
+    th {
+      background: var(--slate-900);
+      color: #ffffff;
+      text-align: left;
+      padding: 12px 14px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--slate-200);
+      vertical-align: top;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .tag-full {
+      background: #ecfdf5;
+      color: #047857;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #a7f3d0;
+      font-size: 11px;
+    }
+    .tag-forbidden {
+      background: #fff1f2;
+      color: #be123c;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #fecdd3;
+      font-size: 11px;
+    }
+    .tag-view {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      font-size: 11px;
+    }
+    .tag-op {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #bfdbfe;
+      font-size: 11px;
+    }
+    ul {
+      margin-left: 20px;
+      margin-bottom: 20px;
+    }
+    li {
+      font-size: 14px;
+      color: var(--slate-700);
+      margin-bottom: 8px;
+    }
+    li strong {
+      color: var(--slate-900);
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: var(--slate-100);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--slate-800);
+    }
+    .callout {
+      background: #f0fdf4;
+      border-left: 4px solid var(--primary);
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .callout-title {
+      font-weight: 700;
+      color: var(--primary-dark);
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .callout-body {
+      font-size: 13.5px;
+      color: #166534;
+      margin-bottom: 0;
+    }
+    @media print {
+      body {
+        padding: 0;
+        background: #ffffff;
+      }
+      .container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      .no-print-bar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="no-print-bar">
+      <span class="badge">Official Specification Document</span>
+      <button class="btn-print" onclick="window.print()">
+        🖨️ Print or Save as PDF
+      </button>
+    </div>
+
+    <h1>Hospitality Cloud Channel Manager</h1>
+    <div class="subtitle">Complete Feature &amp; User Role Operations Guide</div>
+
+    <div class="meta-grid">
+      <div class="meta-item"><span class="meta-label">System Architecture:</span> <span class="meta-val">Spring Boot 3 + React 18 Multi-Tenant</span></div>
+      <div class="meta-item"><span class="meta-label">Target Audience:</span> <span class="meta-val">Hoteliers, Operations, Revenue &amp; Reception</span></div>
+      <div class="meta-item"><span class="meta-label">OTA Sync Compliance:</span> <span class="meta-val">Transactional Outbox (&lt; 60s Latency SLA)</span></div>
+      <div class="meta-item"><span class="meta-label">Formats Available:</span> <span class="meta-val">DOCX (Word) &amp; Standalone HTML</span></div>
+    </div>
+
+    <h2>1. Executive Summary</h2>
+    <p>
+      The <strong>Hospitality Cloud Channel Manager</strong> provides synchronized real-time two-way distribution of hotel room inventory, rates, restrictions, and bookings across major Online Travel Agencies (Booking.com, Airbnb, Expedia, Agoda, MakeMyTrip) and front-desk walk-in operations. The system features a strict Role-Based Access Control (RBAC) model across 6 distinct user roles to guarantee data integrity, staff accountability, and operational efficiency.
+    </p>
+
+    <div class="callout">
+      <div class="callout-title">Architecture Rule 6: Zero Overbooking Guarantee</div>
+      <div class="callout-body">
+        When a booking occurs on any channel (or front-desk walk-in), the system atomically locks the inventory unit and pushes availability decrements across all other connected channels in under 60 seconds, eliminating manual parity updates and double bookings.
+      </div>
+    </div>
+
+    <h2>2. User Roles &amp; Operational Hierarchy</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>User Role</th>
+          <th>Operational Scope</th>
+          <th>Primary Responsibility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color: #047857;">Super Admin</strong></td>
+          <td>Platform-Wide</td>
+          <td>Global system configuration, tenant provisioning, system uptime, and cross-organization audits.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Organization Admin</strong></td>
+          <td>All Properties in Group</td>
+          <td>Hotel group governance, staff provisioning, billing, multi-property onboarding, and external channel accounts.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Property Manager</strong></td>
+          <td>Assigned Property</td>
+          <td>Day-to-day hotel operations, room mapping to OTAs, overbooking conflict resolution, and maintenance holds.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Revenue Manager</strong></td>
+          <td>Assigned Property</td>
+          <td>Yield optimization, dynamic rates on the 90-day calendar, bulk price adjustments, stop-sells, and 1-click undo.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Reservations Staff</strong></td>
+          <td>Assigned Property</td>
+          <td>Guest reception, arrivals/departures, front-desk walk-in bookings, phone reservations, and cancellations.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Read-Only Auditor</strong></td>
+          <td>Assigned Property</td>
+          <td>Compliance inspection, rate parity verification, sync latency monitoring, and audit log analysis.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>3. Complete Feature Access Matrix</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Feature / Capability</th>
+          <th>Super Admin</th>
+          <th>Org Admin</th>
+          <th>Property Mgr</th>
+          <th>Revenue Mgr</th>
+          <th>Front Desk</th>
+          <th>Auditor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Live Operations Dashboard</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-op">Operational</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>90-Day Interactive Calendar</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>Daily Rate &amp; Min-Stay Updates</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>Bulk Rate Wizard &amp; 1-Click Undo</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-forbidden">Forbidden</span></td><td><span class="tag-forbidden">Forbidden</span></td></tr>
+        <tr><td><strong>Maintenance Room Holds (Key H)</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>Unified Bookings Inbox</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>Front-Desk Walk-In Booking</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-forbidden">Forbidden</span></td></tr>
+        <tr><td><strong>Double-Booking Conflict Resolution</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>Cancel Booking &amp; Release Units</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-forbidden">Forbidden</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-forbidden">Forbidden</span></td></tr>
+        <tr><td><strong>Connect / Disconnect OTAs &amp; iCal</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-forbidden">Forbidden</span></td><td><span class="tag-forbidden">Forbidden</span></td></tr>
+        <tr><td><strong>Room &amp; Rate Plan Mapping</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-forbidden">Forbidden</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>Instant Outbound Sync Push</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-forbidden">Forbidden</span></td><td><span class="tag-forbidden">Forbidden</span></td></tr>
+        <tr><td><strong>Sync SLA &amp; Health Log Monitoring</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-full">Full</span></td></tr>
+        <tr><td><strong>Room Types &amp; Rate Plans Setup</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-view">View Only</span></td></tr>
+        <tr><td><strong>New Property Onboarding Wizard</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-forbidden">Forbidden</span></td><td><span class="tag-forbidden">Forbidden</span></td><td><span class="tag-forbidden">Forbidden</span></td></tr>
+        <tr><td><strong>Audit Trail &amp; Activity Log</strong></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-full">Full</span></td><td><span class="tag-view">View Only</span></td><td><span class="tag-full">Full</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Role-Specific Feature Breakdown</h2>
+
+    <h3>4.1 Organization Admin &amp; Super Admin</h3>
+    <ul>
+      <li><strong>Multi-Property Governance:</strong> Instant switching between properties via the header switcher.</li>
+      <li><strong>New Hotel Onboarding Wizard:</strong> Interactive 4-step wizard at <code>/onboarding</code> for rapid property setup.</li>
+      <li><strong>OTA Channel Connectivity:</strong> Connect Booking.com, Airbnb, Expedia, Agoda, MakeMyTrip, and iCal calendar feeds.</li>
+      <li><strong>Demo Data Seeding:</strong> 1-click toggle to seed realistic sample reservations and demand curves for staff training.</li>
+      <li><strong>System Audit &amp; SLA Compliance:</strong> Complete audit inspection to ensure compliance with the &lt; 60s sync SLA.</li>
+    </ul>
+
+    <h3>4.2 Property Manager</h3>
+    <ul>
+      <li><strong>Live Operations Dashboard:</strong> Real-time occupancy percentage, room breakdown, arrivals, and departures.</li>
+      <li><strong>Overbooking Conflict Resolution (Rule 6):</strong> Instant alerts and guided room reassignment drawer when simultaneous OTA bookings occur on the final room.</li>
+      <li><strong>Maintenance Room Holds:</strong> Block rooms for repairs or owner stays (<code>Shortcut: H</code>) which immediately decrements sellable inventory across all OTAs.</li>
+      <li><strong>Room &amp; Rate Mapping:</strong> Match internal room types to OTA listing codes.</li>
+      <li><strong>Instant Sync Now:</strong> Force an immediate outbound push to all connected channels.</li>
+    </ul>
+
+    <h3>4.3 Revenue Manager</h3>
+    <ul>
+      <li><strong>90-Day Interactive Calendar Matrix:</strong> Visual calendar showing rooms, prices, sold units, and restrictions with color tokens.</li>
+      <li><strong>Single-Cell Direct Quick Updates:</strong> Adjust nightly rates, toggle stop-sell, or enforce Minimum Length of Stay.</li>
+      <li><strong>Bulk Rate Wizard:</strong> 4-step wizard (<code>Shortcut: B</code>) to adjust prices across custom date ranges and day-of-week filters with confirmation guardrails.</li>
+      <li><strong>1-Click Bulk Undo:</strong> Revert accidental bulk price mistakes instantly with full transaction history restoration.</li>
+    </ul>
+
+    <h3>4.4 Reservations Staff (Front Desk &amp; Reception)</h3>
+    <ul>
+      <li><strong>Today's Movements:</strong> Filter today's arriving and departing guests for smooth check-ins and key handovers.</li>
+      <li><strong>Walk-In &amp; Phone Bookings:</strong> Click "+ New Booking" to instantly record walk-in guests, syncing outward to OTAs in &lt; 60 seconds.</li>
+      <li><strong>Unified Bookings Inbox:</strong> Toggle between "Guestbook View" (visual cards) and "Compact Table View".</li>
+      <li><strong>Reservation Cancellations:</strong> Process cancellations with recorded reasons, automatically restoring room availability everywhere.</li>
+    </ul>
+
+    <h3>4.5 Read-Only Auditor &amp; Stakeholders</h3>
+    <ul>
+      <li><strong>Occupancy &amp; Revenue Oversight:</strong> Real-time visibility into occupancy rates, revenues, and demand curves.</li>
+      <li><strong>Rate Parity Verification:</strong> Audit published rates across all dates without modification risk.</li>
+      <li><strong>Sync Log Inspection:</strong> Audit payload summaries, HTTP status responses, and latency records.</li>
+    </ul>
+
+    <h2>5. Keyboard Shortcuts &amp; Operational Reference</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Shortcut / Trigger</th>
+          <th>Location</th>
+          <th>Functional Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color: #047857;">B Key</strong></td>
+          <td>Calendar Page (<code>/calendar</code>)</td>
+          <td>Opens the 4-step Bulk Rate and Restriction Update Wizard.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">H Key</strong></td>
+          <td>Calendar Page (<code>/calendar</code>)</td>
+          <td>Opens the Room Hold Modal to block rooms for maintenance or owner stays.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Quick Guide</strong></td>
+          <td>Dashboard (<code>/</code>)</td>
+          <td>Toggles the 4-step interactive getting-started checklist for new hoteliers.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Hamburger Menu ☰</strong></td>
+          <td>Mobile Header</td>
+          <td>Opens the touch slide-over navigation drawer on phone screens.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Undo Last Change</strong></td>
+          <td>Calendar Page (<code>/calendar</code>)</td>
+          <td>Instantly reverts the most recent bulk rate update using transaction history.</td>
+        </tr>
+        <tr>
+          <td><strong style="color: #047857;">Sync Now</strong></td>
+          <td>Channels Page (<code>/channels</code>)</td>
+          <td>Forces an immediate outbound push of current availability and prices to all OTAs.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
+

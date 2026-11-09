@@ -16,6 +16,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const ProtectedLayout: React.FC = () => {
   const { user, isLoading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState<boolean>(false);
 
   if (isLoading) {
     return (
@@ -31,10 +32,10 @@ const ProtectedLayout: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
+      <Sidebar mobileOpen={mobileMenuOpen} onCloseMobile={() => setMobileMenuOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Header />
-        <main className="flex-1 p-8 overflow-y-auto">
+        <Header onToggleMobileMenu={() => setMobileMenuOpen((prev) => !prev)} />
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto max-w-[1600px] w-full mx-auto">
           <Outlet />
         </main>
       </div>

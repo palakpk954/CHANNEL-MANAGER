@@ -23,7 +23,8 @@ import java.util.regex.Pattern;
 
 /**
  * Universal RFC 5545 iCal Two-Way Connector.
- * Enables automatic availability synchronization with Airbnb, VRBO, Booking.com iCal,
+ * Enables automatic availability synchronization with Airbnb, VRBO, Booking.com
+ * iCal,
  * and any external vacation rental calendar.
  */
 @Component
@@ -36,7 +37,8 @@ public class ICalConnector implements ChannelConnector {
     private final HttpClient httpClient;
 
     private static final Pattern DATE_ONLY_PATTERN = Pattern.compile("(\\d{4})(\\d{2})(\\d{2})");
-    private static final Pattern DATE_TIME_PATTERN = Pattern.compile("(\\d{4})(\\d{2})(\\d{2})T(\\d{2})(\\d{2})(\\d{2})Z?");
+    private static final Pattern DATE_TIME_PATTERN = Pattern
+            .compile("(\\d{4})(\\d{2})(\\d{2})T(\\d{2})(\\d{2})(\\d{2})Z?");
 
     public ICalConnector(EncryptionService encryptionService, ObjectMapper objectMapper) {
         this.encryptionService = encryptionService;
@@ -74,17 +76,16 @@ public class ICalConnector implements ChannelConnector {
     @Override
     public MappingOptions fetchMappingOptions(ChannelAccount account) {
         List<MappingOptions.ChannelRoomOption> rooms = List.of(
-                new MappingOptions.ChannelRoomOption("ical_calendar", "iCal Universal Calendar Feed")
-        );
+                new MappingOptions.ChannelRoomOption("ical_calendar", "iCal Universal Calendar Feed"));
         List<MappingOptions.ChannelRateOption> rates = List.of(
-                new MappingOptions.ChannelRateOption("ical_standard", "Standard iCal Rate", "ical_calendar")
-        );
+                new MappingOptions.ChannelRateOption("ical_standard", "Standard iCal Rate", "ical_calendar"));
         return new MappingOptions(rooms, rates);
     }
 
     @Override
     public SyncResult pushAvailability(ChannelAccount account, List<AvailabilityUpdate> updates) {
-        // Outbound iCal does not push to external APIs; OTAs pull from our exported .ics URL
+        // Outbound iCal does not push to external APIs; OTAs pull from our exported
+        // .ics URL
         return SyncResult.ok("ical", "Outbound iCal calendar feed dynamically updated.");
     }
 
@@ -142,7 +143,8 @@ public class ICalConnector implements ChannelConnector {
             return reservations;
         }
 
-        // Unfold multiline headers per RFC 5545 (line beginning with space/tab continues previous line)
+        // Unfold multiline headers per RFC 5545 (line beginning with space/tab
+        // continues previous line)
         String unfolded = icsContent.replaceAll("\r?\n[ \t]", "");
         String[] lines = unfolded.split("\r?\n");
 
@@ -188,8 +190,7 @@ public class ICalConnector implements ChannelConnector {
                             "ical_calendar",
                             "ical_standard",
                             status,
-                            Instant.now()
-                    ));
+                            Instant.now()));
                 }
                 inEvent = false;
             } else if (inEvent) {
@@ -217,7 +218,8 @@ public class ICalConnector implements ChannelConnector {
 
     private LocalDate parseDate(String line) {
         int colonIdx = line.indexOf(':');
-        if (colonIdx == -1) return null;
+        if (colonIdx == -1)
+            return null;
         String val = line.substring(colonIdx + 1).trim();
 
         Matcher dtMatcher = DATE_TIME_PATTERN.matcher(val);
@@ -257,4 +259,3 @@ public class ICalConnector implements ChannelConnector {
         }
     }
 }
-

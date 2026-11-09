@@ -636,7 +636,7 @@ export const BookingsPage: React.FC = () => {
         /* 2. COMPACT TABLE VIEW (Aligned, Clean Row Heights, No Yellow Boxes) */
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs min-w-[700px]">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-5">Guest Name</th>

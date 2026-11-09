@@ -284,17 +284,32 @@ public class DemoDataSeederService implements CommandLineRunner {
             LocalDate d = today.plusDays(i);
 
             // Deluxe (10 units, ₹6,500 BAR / ₹7,800 B&B)
-            inventoryBatch.add(new DailyInventory(orgId, propId, deluxe.getId(), d, 10));
+            // Seeded with confirmed booking for days 0-2 (res1)
+            DailyInventory invDeluxe = new DailyInventory(orgId, propId, deluxe.getId(), d, 10);
+            if (i >= 0 && i < 3) {
+                invDeluxe.setSoldUnits(1);
+            }
+            inventoryBatch.add(invDeluxe);
             ratesBatch.add(new DailyRate(orgId, propId, deluxeBar.getId(), d, 650000L, "INR"));
             ratesBatch.add(new DailyRate(orgId, propId, deluxeBb.getId(), d, 780000L, "INR"));
 
             // Suite (5 units, ₹14,000 BAR / ₹16,500 B&B)
-            inventoryBatch.add(new DailyInventory(orgId, propId, suite.getId(), d, 5));
+            // Seeded with confirmed booking for days 0-1 (res2)
+            DailyInventory invSuite = new DailyInventory(orgId, propId, suite.getId(), d, 5);
+            if (i >= 0 && i < 2) {
+                invSuite.setSoldUnits(1);
+            }
+            inventoryBatch.add(invSuite);
             ratesBatch.add(new DailyRate(orgId, propId, suiteBar.getId(), d, 1400000L, "INR"));
             ratesBatch.add(new DailyRate(orgId, propId, suiteBb.getId(), d, 1650000L, "INR"));
 
             // Villa (2 units, ₹42,000 BAR / ₹46,000 B&B)
-            inventoryBatch.add(new DailyInventory(orgId, propId, villa.getId(), d, 2));
+            // Seeded with confirmed booking for days 5-8 (res4)
+            DailyInventory invVilla = new DailyInventory(orgId, propId, villa.getId(), d, 2);
+            if (i >= 5 && i < 9) {
+                invVilla.setSoldUnits(1);
+            }
+            inventoryBatch.add(invVilla);
             ratesBatch.add(new DailyRate(orgId, propId, villaBar.getId(), d, 4200000L, "INR"));
             ratesBatch.add(new DailyRate(orgId, propId, villaBb.getId(), d, 4600000L, "INR"));
         }

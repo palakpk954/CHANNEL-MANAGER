@@ -4,7 +4,16 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-neutral-900 font-sans antialiased selection:bg-emerald-500 selection:text-white;
+    @apply bg-slate-50 text-slate-900 font-sans antialiased text-[15px] leading-relaxed selection:bg-emerald-500 selection:text-white;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Increase base legibility of labels and numbers */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight text-slate-900;
   }
 }
 

@@ -13,13 +13,11 @@ import {
   Plus,
   BedDouble,
   ChevronRight,
-  Play,
   X,
-  Camera,
-  Volume2,
-  VolumeX,
-  Sun,
-  MapPin
+  HelpCircle,
+  Sparkles,
+  Search,
+  Check
 } from 'lucide-react';
 import api from '../lib/api';
 
@@ -84,57 +82,14 @@ interface DashboardSummary {
 
 const CHANNEL_BADGES: Record<string, { label: string; badgeClass: string; icon: string }> = {
   DIRECT: { label: 'Direct Walk-in', badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200', icon: '🏨' },
-  MOCK: { label: 'Mock Global OTA', badgeClass: 'bg-slate-100 text-slate-800 border-slate-200', icon: '🌐' },
+  MOCK: { label: 'Mock Global OTA', badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-200', icon: '🌐' },
   BOOKING_COM: { label: 'Booking.com', badgeClass: 'bg-blue-50 text-blue-800 border-blue-200', icon: '🔵' },
   EXPEDIA: { label: 'Expedia', badgeClass: 'bg-amber-50 text-amber-800 border-amber-200', icon: '🟡' },
   AIRBNB: { label: 'Airbnb', badgeClass: 'bg-rose-50 text-rose-800 border-rose-200', icon: '🔴' },
-  AGODA: { label: 'Agoda', badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-200', icon: '🟣' },
-  MAKEMYTRIP: { label: 'MakeMyTrip', badgeClass: 'bg-red-50 text-red-800 border-red-200', icon: '🟠' },
-  GOIBIBO: { label: 'Goibibo', badgeClass: 'bg-orange-50 text-orange-800 border-orange-200', icon: '🟤' },
+  AGODA: { label: 'Agoda', badgeClass: 'bg-violet-50 text-violet-800 border-violet-200', icon: '🟣' },
+  MAKEMYTRIP: { label: 'MakeMyTrip', badgeClass: 'bg-orange-50 text-orange-800 border-orange-200', icon: '🟠' },
   ICAL: { label: 'iCal Feed', badgeClass: 'bg-purple-50 text-purple-800 border-purple-200', icon: '📅' }
 };
-
-const ROOM_SHOWCASE = [
-  {
-    name: 'Deluxe Ocean View',
-    units: 10,
-    rate: '₹6,500',
-    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-    tag: 'Popular Choice',
-    amenities: ['Private Ocean Balcony', 'King Bed', 'Rain Shower', 'AC']
-  },
-  {
-    name: 'Executive Sea Suite',
-    units: 5,
-    rate: '₹14,000',
-    image: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80',
-    tag: 'Premium Luxury',
-    amenities: ['Private Jacuzzi', '2 King Beds', 'Panoramic Sea View', 'Lounge']
-  },
-  {
-    name: 'Presidential Beach Villa',
-    units: 2,
-    rate: '₹42,000',
-    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
-    tag: 'Ultra VIP',
-    amenities: ['Private Infinity Pool', 'Butler Service', 'Direct Beach', 'Yacht Dock']
-  }
-];
-
-const VIDEO_FEEDS = [
-  {
-    id: 'pool',
-    title: 'Camera 01: Oceanfront Infinity Pool & Cabanas',
-    url: 'https://cdn.coverr.co/videos/coverr-swimming-pool-in-a-luxury-hotel-5244/1080p.mp4',
-    fps: '60 FPS Ultra HD'
-  },
-  {
-    id: 'resort',
-    title: 'Camera 02: Tropical Resort Gardens & Palms',
-    url: 'https://cdn.coverr.co/videos/coverr-tropical-resort-with-palm-trees-5387/1080p.mp4',
-    fps: '60 FPS 1080P'
-  }
-];
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -143,11 +98,12 @@ export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'arrivals' | 'departures' | 'recent'>('arrivals');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Video walkthrough modal state
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
+  // New User Onboarding Guide dismissal state (persisted in localStorage)
+  const [showGuide, setShowGuide] = useState<boolean>(() => {
+    return localStorage.getItem('hide_onboarding_guide') !== 'true';
+  });
 
   useEffect(() => {
     loadProperties();
@@ -186,6 +142,16 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
+  const toggleGuide = () => {
+    const nextState = !showGuide;
+    setShowGuide(nextState);
+    if (!nextState) {
+      localStorage.setItem('hide_onboarding_guide', 'true');
+    } else {
+      localStorage.removeItem('hide_onboarding_guide');
+    }
+  };
+
   const formatCurrency = (cents: number, curr: string) => {
     const symbol = curr === 'INR' ? '₹' : curr === 'EUR' ? '€' : '$';
     return `${symbol}${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -196,151 +162,254 @@ export const DashboardPage: React.FC = () => {
     return d.toLocaleDateString('en-US', { weekday: 'short' });
   };
 
+  // Filter arrivals/departures table by guest name or channel booking ID
+  const filterList = (list: DashboardGuestItem[] | undefined) => {
+    if (!list) return [];
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase();
+    return list.filter(
+      (item) =>
+        item.guestName.toLowerCase().includes(q) ||
+        item.channelReservationId.toLowerCase().includes(q) ||
+        item.roomTypeName.toLowerCase().includes(q)
+    );
+  };
+
   return (
-    <div className="space-y-7 animate-fade-in pb-12">
-      {/* 1. HERO RESORT BANNER WITH LUXURY PHOTOGRAPHY & LIVE WALKTHROUGH TRIGGER */}
-      <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-200 group">
-        {/* Background Resort Image with Subtle Ken Burns Effect */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-          style={{ 
-            backgroundImage: `url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80')` 
-          }}
-        />
-
-        {/* Ambient Dark Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/80 to-slate-950/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
-
-        {/* Hero Content */}
-        <div className="relative z-10 p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="max-w-2xl text-white space-y-3">
-            {/* Live Property Location & Weather Pills */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span>5-Star Luxury Resort</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-200 border border-white/15 backdrop-blur-md">
-                <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                <span>Goa Beachfront, India</span>
-              </span>
-
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-amber-300 border border-white/15 backdrop-blur-md">
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
-                <span>29°C Sunny • Low Tide</span>
-              </span>
-            </div>
-
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight drop-shadow-md text-white">
-              {summary?.propertyName || 'The Grand Palace Resort & Spa'}
-            </h1>
-
-            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl drop-shadow">
-              Multi-channel inventory synchronized in real time across Booking.com, Airbnb, Expedia, Agoda, and iCal feeds with guaranteed zero overbooking.
-            </p>
-
-            {/* Quick Action Buttons */}
-            <div className="pt-2 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsVideoModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold shadow-lg transition-transform active:scale-95 group/btn"
-              >
-                <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center group-hover/btn:scale-110 transition">
-                  <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
-                </div>
-                <span>Watch Live Resort Cam / Video</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate('/calendar')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-white text-xs font-semibold backdrop-blur-md transition"
-              >
-                <Calendar className="w-4 h-4 text-emerald-400" />
-                <span>Open Calendar Matrix</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate('/bookings')}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-950/50 transition"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Walk-in Booking</span>
-              </button>
-            </div>
+    <div className="space-y-6 animate-fade-in pb-12">
+      {/* 1. TOP OPERATIONS HEADER & QUICK ACTIONS */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Live Channel Operations</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-500 font-normal">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
           </div>
-
-          {/* Right Live Occupancy Ring / Property Switcher */}
-          <div className="bg-slate-900/80 border border-white/15 p-5 rounded-2xl backdrop-blur-xl text-white min-w-[240px] flex flex-col justify-between">
-            <div className="flex items-center justify-between gap-3 text-xs text-slate-400 pb-3 border-b border-white/10">
-              <span className="font-semibold text-slate-300">Active Property</span>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+            <span className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-emerald-600" />
               {properties.length > 1 ? (
                 <select
                   value={selectedPropertyId}
                   onChange={(e) => setSelectedPropertyId(e.target.value)}
-                  className="bg-slate-800 text-xs text-white rounded border border-white/20 px-2 py-0.5"
+                  className="bg-transparent font-extrabold text-slate-900 cursor-pointer focus:outline-none"
                 >
                   {properties.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
                   ))}
                 </select>
               ) : (
-                <Building2 className="w-4 h-4 text-emerald-400" />
+                <span>{summary?.propertyName || (properties[0]?.name ?? 'The Grand Palace Resort & Spa')}</span>
               )}
-            </div>
+            </span>
+            <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              ● All Channels Synced
+            </span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Real-time multi-tenant distribution across Booking.com, Airbnb, Expedia, and iCal with instant inventory locking.
+          </p>
+        </div>
 
-            <div className="py-3">
-              <div className="text-xs text-slate-400">Total Rooms Configured</div>
-              <div className="text-3xl font-extrabold text-white mt-1">
-                {summary?.totalRooms || 17} <span className="text-sm font-normal text-slate-400">Suites</span>
-              </div>
-              <div className="text-xs text-emerald-400 mt-1 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>All {summary?.activeChannelsCount || 2} OTA Channels Active</span>
-              </div>
-            </div>
+        {/* Primary Action Buttons */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => navigate('/bookings')}
+            className="inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-950/20 transition active:scale-95"
+          >
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="truncate">+ New Booking</span>
+          </button>
 
-            <div className="pt-2">
-              <button
-                onClick={() => loadDashboard(selectedPropertyId)}
-                className="w-full py-1.5 px-3 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-slate-300" />
-                <span>Refresh Live Metrics</span>
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/calendar')}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition active:scale-95"
+          >
+            <Calendar className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="truncate">Open Calendar</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/channels')}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-200 transition"
+          >
+            <Globe2 className="w-4 h-4 text-indigo-600 shrink-0" />
+            <span className="truncate">Connect Channel</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleGuide}
+            className={`inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition ${
+              showGuide
+                ? 'bg-amber-50 text-amber-900 border-amber-200'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+            title="Toggle Getting Started Guide"
+          >
+            <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span className="truncate">{showGuide ? 'Hide Guide' : 'Quick Guide'}</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. DOUBLE BOOKING CONFLICT ALERT (Architecture Rule 6) */}
+      {/* 2. INTERACTIVE NEW USER QUICK START GUIDE (Dismissible) */}
+      {showGuide && (
+        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white rounded-2xl p-6 border border-emerald-700/40 shadow-lg relative overflow-hidden">
+          <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                  <span>How Channel Manager Works (4 Easy Steps)</span>
+                  <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-400/30">
+                    New User Checklist
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-300">
+                  Follow these steps to synchronize your rooms and rates everywhere without overbooking.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={toggleGuide}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition"
+              title="Dismiss Guide"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {/* Step 1 */}
+            <div 
+              onClick={() => navigate('/rooms-and-prices')}
+              className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl p-3.5 cursor-pointer transition group"
+            >
+              <div className="flex items-center justify-between text-xs text-emerald-300 font-bold mb-1.5">
+                <span>Step 1: Rooms & Prices</span>
+                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">
+                  <Check className="w-3 h-3" /> Configured
+                </span>
+              </div>
+              <h4 className="font-bold text-xs text-white group-hover:text-emerald-200 transition">
+                Create Room Types & Price Plans
+              </h4>
+              <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                Define Deluxe, Suite, Villa and linked pricing options (Room Only, Bed & Breakfast).
+              </p>
+              <div className="mt-2 text-[11px] font-semibold text-emerald-300 flex items-center gap-1">
+                <span>Manage Rooms</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div 
+              onClick={() => navigate('/channels')}
+              className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl p-3.5 cursor-pointer transition group"
+            >
+              <div className="flex items-center justify-between text-xs text-emerald-300 font-bold mb-1.5">
+                <span>Step 2: Connect Channels</span>
+                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">
+                  <Check className="w-3 h-3" /> 2 Linked
+                </span>
+              </div>
+              <h4 className="font-bold text-xs text-white group-hover:text-emerald-200 transition">
+                Match Rooms to OTAs
+              </h4>
+              <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                Connect Booking.com, Airbnb, Expedia and match which room sells under which channel code.
+              </p>
+              <div className="mt-2 text-[11px] font-semibold text-emerald-300 flex items-center gap-1">
+                <span>View Channels</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div 
+              onClick={() => navigate('/calendar')}
+              className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl p-3.5 cursor-pointer transition group"
+            >
+              <div className="flex items-center justify-between text-xs text-amber-300 font-bold mb-1.5">
+                <span>Step 3: Manage Daily Rates</span>
+                <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
+                  ⚡ Interactive
+                </span>
+              </div>
+              <h4 className="font-bold text-xs text-white group-hover:text-amber-200 transition">
+                Adjust Calendar & Restrictions
+              </h4>
+              <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                Change prices, close rooms for sale (stop-sell), or set minimum stay rules with 1-click bulk updates.
+              </p>
+              <div className="mt-2 text-[11px] font-semibold text-amber-300 flex items-center gap-1">
+                <span>Open Calendar</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div 
+              onClick={() => navigate('/bookings')}
+              className="bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl p-3.5 cursor-pointer transition group"
+            >
+              <div className="flex items-center justify-between text-xs text-emerald-300 font-bold mb-1.5">
+                <span>Step 4: Receive Bookings</span>
+                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">
+                  🛡️ Zero Overbooking
+                </span>
+              </div>
+              <h4 className="font-bold text-xs text-white group-hover:text-emerald-200 transition">
+                Automated Inventory Decrement
+              </h4>
+              <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                When a guest books on Booking.com, inventory drops instantly on Airbnb & Expedia in under 60 seconds.
+              </p>
+              <div className="mt-2 text-[11px] font-semibold text-emerald-300 flex items-center gap-1">
+                <span>View Bookings Inbox</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. DOUBLE BOOKING CONFLICT ALERT (Architecture Rule 6 Showcase) */}
       {summary && summary.unresolvedConflictsCount > 0 && (
-        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 shadow-sm">
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-5 shadow-sm animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-md shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900 text-xs font-bold mb-1">
-                  High Priority Incident
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-200/80 text-amber-950 text-xs font-bold mb-1">
+                  Overbooking Conflict Detected
                 </div>
                 <h3 className="font-bold text-amber-950 text-base">
-                  Action required: {summary.unresolvedConflictsCount} double booking detected
+                  Action required: {summary.unresolvedConflictsCount} simultaneous double booking caught
                 </h3>
-                <p className="text-amber-900/80 text-xs sm:text-sm mt-0.5">
-                  Simultaneous booking arrived for a sold-out room. Overbooking protection locked availability. 
-                  Please reassign room or notify guest.
+                <p className="text-amber-900 text-xs sm:text-sm mt-0.5">
+                  Overbooking protection locked availability to prevent further reservations. Please reassign the guest to another room or contact them.
                 </p>
               </div>
             </div>
             <button
               onClick={() => navigate('/bookings')}
-              className="bg-amber-800 hover:bg-amber-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md whitespace-nowrap active:scale-95"
+              className="bg-amber-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition shadow-md whitespace-nowrap active:scale-95"
             >
               Resolve Overbooking Now →
             </button>
@@ -348,274 +417,211 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* 3. MODERN KPI CARDS GRID */}
+      {/* 4. MODERN KPI SUMMARY CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Occupancy Rate */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition group">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
             <span>Today's Occupancy</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <BedDouble className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-900">
               {summary ? `${summary.occupancyRatePercentage}%` : '0%'}
             </span>
-            <span className="text-xs text-slate-500 font-medium">
-              ({summary?.occupiedRoomsToday || 0}/{summary?.totalRooms || 0} occupied)
+            <span className="text-xs text-slate-600 font-semibold">
+              ({summary?.occupiedRoomsToday || 0} of {summary?.totalRooms || 0} occupied)
             </span>
           </div>
           <div className="mt-3 w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
             <div
               className="bg-gradient-to-r from-emerald-600 to-teal-500 h-full rounded-full transition-all duration-700"
-              style={{ width: `${Math.min(100, summary?.occupancyRatePercentage || 0)}%` }}
+              style={{ width: `${Math.min(100, Math.max(8, summary?.occupancyRatePercentage || 0))}%` }}
             />
           </div>
-          <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-500">
-            <span>Open for sale:</span>
-            <span className="font-bold text-emerald-700">{summary ? summary.totalRooms - summary.occupiedRoomsToday : 0} rooms</span>
+          <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
+            <span>Rooms available to sell:</span>
+            <span className="font-extrabold text-emerald-700">
+              {summary ? summary.totalRooms - summary.occupiedRoomsToday : 0} rooms open
+            </span>
           </div>
         </div>
 
         {/* KPI 2: Today's Movements */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition group">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
             <span>Today's Movements</span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-              <span className="text-2xl font-black text-slate-900">{summary?.todayArrivalsCount || 0}</span>
-              <span className="block text-[11px] text-emerald-700 font-semibold">Arrivals today</span>
+          <div className="mt-2.5 grid grid-cols-2 gap-2">
+            <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100">
+              <span className="text-2xl font-black text-emerald-950">{summary?.todayArrivalsCount || 0}</span>
+              <span className="block text-[11px] text-emerald-800 font-bold">Arrivals Today</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-2xl font-black text-slate-900">{summary?.todayDeparturesCount || 0}</span>
-              <span className="block text-[11px] text-slate-600 font-semibold">Departures</span>
+              <span className="block text-[11px] text-slate-600 font-bold">Departures</span>
             </div>
           </div>
-          <div className="mt-2.5 text-[11px] text-slate-500 flex items-center justify-between">
+          <div className="mt-2.5 text-xs text-slate-500 flex items-center justify-between">
             <span>In-house stayovers:</span>
-            <span className="font-bold text-slate-800">{summary?.inHouseStayoversCount || 0}</span>
+            <span className="font-bold text-slate-800">{summary?.inHouseStayoversCount || 0} guests</span>
           </div>
         </div>
 
-        {/* KPI 3: Revenue (MTD & Arriving) */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition group">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
+        {/* KPI 3: Revenue */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
             <span>Month-to-Date Revenue</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+          <div className="mt-2.5">
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">
               {summary ? formatCurrency(summary.monthToDateRevenueCents, summary.currency) : '₹0'}
             </span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <span>Today's arriving revenue:</span>
-            <span className="font-bold text-emerald-700">
+            <span className="font-extrabold text-emerald-700">
               {summary ? formatCurrency(summary.todayRevenueCents, summary.currency) : '₹0'}
             </span>
           </div>
         </div>
 
         {/* KPI 4: Channels Connected & Health */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition group">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
             <span>Connected Channels</span>
-            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition">
+            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
               <Globe2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-slate-900">
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="text-3xl font-black text-slate-900">
               {summary ? summary.activeChannelsCount : 0}
             </span>
             <span className="text-xs text-slate-500 font-medium">
-              / {summary ? summary.totalChannelsCount : 0} configured
+              of {summary ? summary.totalChannelsCount : 0} active
             </span>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700">
+          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              SLA &lt; 60s Met
+              Sync Latency &lt; 60s
             </span>
             <button
               onClick={() => navigate('/channels/health')}
-              className="text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-0.5"
+              className="text-emerald-700 hover:text-emerald-900 font-bold flex items-center gap-0.5"
             >
-              <span>Inspect SLA</span>
+              <span>Sync Log</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* 4. LUXURY ROOM TYPES SHOWCASE WITH HIGH-RES PHOTOS */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-slate-900">Property Room Suites</h2>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 uppercase">
-                Live Inventory
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">High-definition room inventory distributed across channels.</p>
-          </div>
-          <button
-            onClick={() => navigate('/rooms-and-prices')}
-            className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
-          >
-            <span>Manage rooms & rates</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {ROOM_SHOWCASE.map((room) => (
-            <div 
-              key={room.name}
-              className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 group flex flex-col justify-between"
-            >
-              <div>
-                {/* Room Image with Zoom on Hover */}
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={room.image}
-                    alt={room.name}
-                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-                  
-                  {/* Floating Tag */}
-                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-900/80 text-amber-300 backdrop-blur-md border border-white/20">
-                    {room.tag}
-                  </span>
-
-                  {/* Units Count Pill */}
-                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-300 backdrop-blur-md border border-emerald-400/30">
-                    {room.units} Units Total
-                  </span>
-
-                  {/* Room Name on Image Bottom */}
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <h3 className="text-base font-bold text-white drop-shadow-md">{room.name}</h3>
-                  </div>
-                </div>
-
-                {/* Amenities Badges */}
-                <div className="p-4 space-y-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {room.amenities.map((am) => (
-                      <span key={am} className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                        {am}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Price & Action Footer */}
-              <div className="p-4 pt-0 border-t border-slate-100 mt-2 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-slate-400 block">Base Rate from</span>
-                  <span className="text-base font-black text-slate-900">{room.rate}</span>
-                  <span className="text-[10px] text-slate-400"> / night</span>
-                </div>
-
-                <button
-                  onClick={() => navigate('/calendar')}
-                  className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition"
-                >
-                  Adjust Rates →
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 5. 7-DAY OCCUPANCY OUTLOOK & CHANNEL CONNECTIONS ROW */}
+      {/* 5. 7-DAY OCCUPANCY DEMAND FORECAST & CHANNELS SUMMARY */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 7-Day Occupancy Bar Forecast */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">7-Day Occupancy Outlook</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Projected room demand across all active channels.</p>
-            </div>
-            <button
-              onClick={() => navigate('/calendar')}
-              className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
-            >
-              <span>Full calendar</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-2 pt-2">
-            {summary?.sevenDayOccupancyTrend.map((day, idx) => {
-              const dayName = getDayName(day.date);
-              const isToday = idx === 0;
-
-              return (
-                <div
-                  key={day.date}
-                  className={`p-3 rounded-xl border text-center transition-all ${
-                    isToday
-                      ? 'border-emerald-600 bg-emerald-50/40 ring-2 ring-emerald-500/20'
-                      : 'border-slate-200 bg-slate-50/50'
-                  }`}
-                >
-                  <div className="text-[11px] font-bold text-slate-500 uppercase">{dayName}</div>
-                  <div className="text-xs font-semibold text-slate-800 mt-0.5">
-                    {day.date.split('-').slice(1).join('/')}
-                  </div>
-
-                  <div className="my-3 flex flex-col items-center">
-                    <span className="text-base sm:text-lg font-black text-slate-900">{day.occupancyPercentage}%</span>
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${
-                          day.occupancyPercentage > 80
-                            ? 'bg-rose-500'
-                            : day.occupancyPercentage > 50
-                            ? 'bg-amber-500'
-                            : 'bg-emerald-600'
-                        }`}
-                        style={{ width: `${day.occupancyPercentage}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-[10px] text-slate-500">
-                    <span className="font-semibold text-slate-700">{day.soldUnits}</span> booked
-                  </div>
-                  <div className="text-[10px] text-emerald-700 font-bold">
-                    <span>{day.availableUnits}</span> left
-                  </div>
+        {/* 7-Day Occupancy Demand Forecast */}
+        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900 text-base">7-Day Occupancy Forecast</h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Live Demand
+                  </span>
                 </div>
-              );
-            })}
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Daily rooms booked and remaining open availability across connected channels.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/calendar')}
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 shrink-0 self-start sm:self-auto"
+              >
+                <span>Open full calendar</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Scrollable forecast container */}
+            <div className="overflow-x-auto pb-2 -mx-2 px-2 sm:mx-0 sm:px-0">
+              <div className="min-w-[580px] lg:min-w-0 grid grid-cols-7 gap-2 pt-1">
+                {summary?.sevenDayOccupancyTrend.map((day, idx) => {
+                  const dayName = getDayName(day.date);
+                  const isToday = idx === 0;
+
+                  return (
+                    <div
+                      key={day.date}
+                      className={`p-2.5 sm:p-3 rounded-xl border text-center transition-all flex flex-col justify-between min-h-[148px] ${
+                        isToday
+                          ? 'border-emerald-600 bg-emerald-50/80 ring-2 ring-emerald-500/20 shadow-sm'
+                          : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100/70'
+                      }`}
+                    >
+                      <div>
+                        <div className={`text-[11px] font-black uppercase tracking-wider ${isToday ? 'text-emerald-800' : 'text-slate-600'}`}>
+                          {dayName}
+                        </div>
+                        <div className="text-xs font-bold text-slate-900 mt-0.5">
+                          {day.date.split('-').slice(1).join('/')}
+                        </div>
+                      </div>
+
+                      <div className="my-2 flex flex-col items-center">
+                        <span className="text-base sm:text-lg font-black text-slate-900">{day.occupancyPercentage}%</span>
+                        <div className="w-full bg-slate-200 h-2 rounded-full mt-1 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              day.occupancyPercentage > 70
+                                ? 'bg-rose-500'
+                                : day.occupancyPercentage > 30
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-600'
+                            }`}
+                            style={{ width: `${Math.max(day.occupancyPercentage, 8)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-700 space-y-0.5 leading-tight">
+                        <div>
+                          <span className="font-extrabold text-slate-900">{day.soldUnits}</span> booked
+                        </div>
+                        <div className="text-emerald-800 font-extrabold">
+                          <span>{day.availableUnits}</span> left
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Channel Health Status Quick Card */}
+        {/* Connected Booking Channels Card */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-slate-900 text-base">Channel Connections</h3>
-              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                Active Sync
-              </span>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-slate-900 text-base">Connected Channels</h3>
+                <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                  Auto-Syncing
+                </span>
+              </div>
             </div>
             <p className="text-xs text-slate-500 mb-4">
-              Real-time synchronization status with connected channels.
+              Real-time synchronization status with external booking portals.
             </p>
 
             <div className="space-y-3">
@@ -630,27 +636,28 @@ export const DashboardPage: React.FC = () => {
                   return (
                     <div
                       key={ch.channelAccountId}
-                      className="p-3 bg-slate-50 hover:bg-slate-100/80 transition rounded-xl border border-slate-200 flex items-center justify-between text-xs"
+                      className="p-4 bg-slate-50 hover:bg-slate-100/90 transition rounded-xl border border-slate-200 flex items-center justify-between text-sm"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-base">{badge.icon}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{badge.icon}</span>
                         <div>
-                          <div className="font-bold text-slate-800">{badge.label}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {ch.mappedRoomsCount} room(s) mapped
+                          <div className="font-extrabold text-slate-900 text-sm">{badge.label}</div>
+                          <div className="text-xs text-slate-600 font-semibold mt-0.5">
+                            <span className="text-slate-800">{ch.mappedRoomsCount} room types</span> matched
                           </div>
                         </div>
                       </div>
 
                       <div className="text-right">
                         <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
                             ch.status === 'CONNECTED'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border-rose-200'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : 'bg-rose-50 text-rose-800 border-rose-200'
                           }`}
                         >
-                          {ch.status === 'CONNECTED' ? '● Live' : 'Error'}
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span>{ch.status === 'CONNECTED' ? 'Live Auto-Sync' : 'Action needed'}</span>
                         </span>
                       </div>
                     </div>
@@ -667,59 +674,76 @@ export const DashboardPage: React.FC = () => {
           <div className="pt-4 mt-4 border-t border-slate-100">
             <button
               onClick={() => navigate('/channels')}
-              className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm"
             >
-              <span>Manage all channels & mappings</span>
+              <span>Manage Channels & Mappings</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* 6. GUEST MOVEMENTS TABLE (Arrivals, Departures, Recent) */}
+      {/* 6. GUEST MOVEMENTS TABLE (Arrivals, Departures, Recent Bookings) */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Table Tabs */}
-        <div className="border-b border-slate-200 px-6 pt-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+        {/* Table Header & Controls */}
+        <div className="border-b border-slate-200 px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Tabs with smooth horizontal scroll on mobile */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 max-w-full">
             <button
               onClick={() => setActiveTab('arrivals')}
-              className={`pb-3 text-xs font-bold border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition whitespace-nowrap shrink-0 ${
                 activeTab === 'arrivals'
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold'
               }`}
             >
               Today's Arrivals ({summary?.todayArrivalsCount || 0})
             </button>
+
             <button
               onClick={() => setActiveTab('departures')}
-              className={`pb-3 text-xs font-bold border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition whitespace-nowrap shrink-0 ${
                 activeTab === 'departures'
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold'
               }`}
             >
               Today's Departures ({summary?.todayDeparturesCount || 0})
             </button>
+
             <button
               onClick={() => setActiveTab('recent')}
-              className={`pb-3 text-xs font-bold border-b-2 transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition whitespace-nowrap shrink-0 ${
                 activeTab === 'recent'
-                  ? 'border-emerald-600 text-emerald-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold'
               }`}
             >
-              Recent Inbound Bookings
+              Recent Bookings
             </button>
           </div>
 
-          <button
-            onClick={() => navigate('/bookings')}
-            className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 pb-3"
-          >
-            <span>Open unified bookings inbox</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          {/* Search Filter & Link to Unified Inbox */}
+          <div className="flex items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:flex-initial">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search guest or booking #..."
+                className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-full md:w-60"
+              />
+            </div>
+
+            <button
+              onClick={() => navigate('/bookings')}
+              className="text-xs sm:text-sm font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 whitespace-nowrap shrink-0"
+            >
+              <span>All Bookings</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Table Content */}
@@ -727,83 +751,96 @@ export const DashboardPage: React.FC = () => {
           {(() => {
             if (loading) {
               return (
-                <div className="p-12 text-center text-slate-400 text-xs">
+                <div className="p-12 text-center text-slate-400 text-sm">
                   <RefreshCw className="w-8 h-8 text-slate-300 mx-auto mb-2 animate-spin" />
                   <p>Loading movements and bookings...</p>
                 </div>
               );
             }
 
-            const currentList =
+            const rawList =
               activeTab === 'arrivals'
-                ? summary?.todayArrivals || []
+                ? summary?.todayArrivals
                 : activeTab === 'departures'
-                ? summary?.todayDepartures || []
-                : summary?.recentBookings || [];
+                ? summary?.todayDepartures
+                : summary?.recentBookings;
 
-            if (currentList.length === 0) {
+            const filteredList = filterList(rawList);
+
+            if (filteredList.length === 0) {
               return (
-                <div className="p-12 text-center text-slate-400 text-xs">
+                <div className="p-12 text-center text-slate-500 text-sm">
                   <BedDouble className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                  <p>No guest bookings in this view today.</p>
+                  <p className="font-bold text-slate-800 text-base">No guest bookings in this view.</p>
+                  <p className="text-slate-500 text-xs mt-1">
+                    {searchQuery ? 'Try clearing your search query.' : 'New reservations from OTAs will appear here automatically.'}
+                  </p>
                 </div>
               );
             }
 
             return (
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-sm min-w-[720px]">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-6">Guest Name</th>
-                    <th className="py-3 px-6">Booking Channel</th>
-                    <th className="py-3 px-6">Room Assigned</th>
-                    <th className="py-3 px-6">Stay Period</th>
-                    <th className="py-3 px-6">Amount</th>
-                    <th className="py-3 px-6">Status</th>
+                  <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-600 font-extrabold uppercase tracking-wider text-xs">
+                    <th className="py-4 px-6">Guest Name</th>
+                    <th className="py-4 px-6">Booking Source</th>
+                    <th className="py-4 px-6">Room Assigned</th>
+                    <th className="py-4 px-6">Stay Period</th>
+                    <th className="py-4 px-6">Total Amount</th>
+                    <th className="py-4 px-6">Status</th>
+                    <th className="py-4 px-6 text-right">Quick Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {currentList.map((item) => {
+                <tbody className="divide-y divide-slate-100 font-medium">
+                  {filteredList.map((item) => {
                     const badge = CHANNEL_BADGES[item.channelType] || {
                       label: item.channelType,
-                      badgeClass: 'bg-slate-100 text-slate-700',
+                      badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
                       icon: '🌐'
                     };
 
                     return (
                       <tr
                         key={item.reservationId}
-                        onClick={() => navigate('/bookings')}
-                        className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        className="hover:bg-slate-50/90 transition-colors group"
                       >
-                        <td className="py-3.5 px-6 font-bold text-slate-900">
+                        <td className="py-4 px-6 font-bold text-slate-900 text-base">
                           {item.guestName}
                         </td>
-                        <td className="py-3.5 px-6">
+                        <td className="py-4 px-6">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[11px] border ${badge.badgeClass}`}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold text-xs border ${badge.badgeClass}`}
                           >
                             <span>{badge.icon}</span>
                             <span>{badge.label}</span>
                           </span>
-                          <span className="block text-slate-400 font-mono text-[10px] mt-0.5">
+                          <span className="block text-slate-500 font-mono text-xs font-semibold mt-1">
                             #{item.channelReservationId}
                           </span>
                         </td>
-                        <td className="py-3.5 px-6 font-medium text-slate-700">
-                          {item.roomTypeName} ({item.unitsBooked} unit{item.unitsBooked > 1 ? 's' : ''})
+                        <td className="py-4 px-6 font-bold text-slate-800">
+                          {item.roomTypeName} <span className="text-slate-500 font-normal">({item.unitsBooked} unit)</span>
                         </td>
-                        <td className="py-3.5 px-6 text-slate-700">
-                          {item.checkInDate} <span className="text-slate-400">→</span> {item.checkOutDate}
+                        <td className="py-4 px-6 text-slate-700 font-semibold">
+                          {item.checkInDate} <span className="text-slate-400 font-normal">→</span> {item.checkOutDate}
                         </td>
-                        <td className="py-3.5 px-6 font-extrabold text-slate-900">
+                        <td className="py-4 px-6 font-black text-slate-900 text-base">
                           {formatCurrency(item.totalAmountCents, summary?.currency || 'INR')}
                         </td>
-                        <td className="py-3.5 px-6">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <td className="py-4 px-6">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             Confirmed
                           </span>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <button
+                            onClick={() => navigate('/bookings')}
+                            className="px-4 py-1.5 bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-800 text-xs font-extrabold rounded-lg transition shadow-sm"
+                          >
+                            View Booking
+                          </button>
                         </td>
                       </tr>
                     );
@@ -814,94 +851,6 @@ export const DashboardPage: React.FC = () => {
           })()}
         </div>
       </div>
-
-      {/* 7. LIVE RESORT CAM & WALKTHROUGH VIDEO MODAL */}
-      {isVideoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
-          <div className="bg-slate-900 rounded-3xl max-w-4xl w-full border border-white/15 overflow-hidden shadow-2xl">
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-slate-950/60">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-400">Live Video Stream</span>
-                <span className="text-sm font-semibold text-white">| {VIDEO_FEEDS[activeVideoIndex].title}</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsMuted(!isMuted)}
-                  className="p-2 rounded-full bg-slate-800 text-slate-300 hover:text-white transition"
-                  title={isMuted ? "Unmute" : "Mute"}
-                >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsVideoModalOpen(false)}
-                  className="p-2 rounded-full bg-slate-800 text-slate-300 hover:text-white transition"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Video Player */}
-            <div className="relative aspect-video bg-black overflow-hidden">
-              <video
-                key={VIDEO_FEEDS[activeVideoIndex].url}
-                autoPlay
-                loop
-                muted={isMuted}
-                playsInline
-                className="w-full h-full object-cover"
-              >
-                <source src={VIDEO_FEEDS[activeVideoIndex].url} type="video/mp4" />
-              </video>
-
-              {/* Watermark Overlay */}
-              <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/15 text-white text-xs font-mono">
-                <Camera className="w-3.5 h-3.5 text-emerald-400" />
-                <span>THE GRAND PALACE RESORT & SPA</span>
-              </div>
-
-              <div className="absolute bottom-4 right-4 px-3 py-1 rounded bg-black/60 text-emerald-400 text-[11px] font-mono border border-white/15">
-                {VIDEO_FEEDS[activeVideoIndex].fps}
-              </div>
-            </div>
-
-            {/* Channel / Camera Switcher */}
-            <div className="p-4 bg-slate-950/80 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-400">Switch Camera Feed:</span>
-                {VIDEO_FEEDS.map((feed, idx) => (
-                  <button
-                    key={feed.id}
-                    type="button"
-                    onClick={() => setActiveVideoIndex(idx)}
-                    className={`px-3 py-1.5 rounded-lg font-semibold transition ${
-                      activeVideoIndex === idx
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    Cam {idx + 1}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsVideoModalOpen(false)}
-                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium"
-              >
-                Close Stream
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
